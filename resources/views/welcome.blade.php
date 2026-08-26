@@ -232,6 +232,84 @@
             align-items: start;
         }
 
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .flow-card {
+            min-height: 158px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 12px;
+            border: 1px solid #cfc5b3;
+            border-radius: 8px;
+            background: #fffdf8;
+            padding: 14px;
+        }
+
+        .flow-card header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--ink);
+            color: #fff;
+            font: 700 13px/1 var(--mono);
+        }
+
+        .flow-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .demo-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .demo-item {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #f8f1e4;
+            padding: 10px;
+        }
+
+        .demo-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .demo-item strong {
+            display: block;
+            margin-top: 4px;
+            font: 600 12px/1.25 var(--mono);
+            word-break: break-word;
+        }
+
         .panel {
             grid-column: span 6;
             border: 1px solid var(--line);
@@ -421,6 +499,11 @@
             .panel.medium {
                 grid-column: span 12;
             }
+
+            .flow-grid,
+            .demo-strip {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         @media (max-width: 640px) {
@@ -429,7 +512,9 @@
             }
 
             .field-grid,
-            .field-grid.three {
+            .field-grid.three,
+            .flow-grid,
+            .demo-strip {
                 grid-template-columns: 1fr;
             }
 
@@ -466,10 +551,10 @@
         </div>
 
         <ul class="nav">
-            <li><button class="active" data-tab="setup">Setup</button></li>
-            <li><button data-tab="documents">Documentos</button></li>
-            <li><button data-tab="payloads">Payloads</button></li>
-            <li><button data-tab="responses">Respuestas</button></li>
+            <li><button class="active" data-tab="setup">1. Flujo</button></li>
+            <li><button data-tab="documents">2. Documentos</button></li>
+            <li><button data-tab="payloads">3. JSON</button></li>
+            <li><button data-tab="responses">4. Respuestas</button></li>
         </ul>
 
         <footer>
@@ -480,8 +565,8 @@
     <main>
         <div class="topbar">
             <div>
-                <h2>Banco de pruebas operativo</h2>
-                <p>Flujo minimo para levantar base, autenticar, registrar empresa beta y crear comprobantes con reglas comunes de SUNAT Peru.</p>
+                <h2>Prueba SUNAT BETA paso a paso</h2>
+                <p>Datos demo cargados para preparar ambiente, crear factura/boleta, generar PDF y enviar comprobantes al servicio beta.</p>
             </div>
             <div class="base-url">
                 <label for="baseUrl">Base URL</label>
@@ -491,6 +576,65 @@
 
         <section id="setup" class="section active">
             <div class="grid">
+                <article class="panel wide">
+                    <div class="panel-head">
+                        <h3>Flujo guiado SUNAT BETA</h3>
+                        <span class="pill warn">datos demo</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="flow-grid">
+                            <div class="flow-card">
+                                <header>
+                                    <div class="step-title"><span class="step-number">1</span> Preparar</div>
+                                    <span id="flowSystemStatus" class="pill idle">pendiente</span>
+                                </header>
+                                <p>Migraciones, seeders, login demo, empresa beta y checklist SUNAT.</p>
+                                <button class="btn green" id="runBetaPrepBtn">Preparar beta</button>
+                            </div>
+                            <div class="flow-card">
+                                <header>
+                                    <div class="step-title"><span class="step-number">2</span> Factura</div>
+                                    <span id="flowInvoiceStatus" class="pill idle">sin crear</span>
+                                </header>
+                                <p>Genera F001 con RUC cliente, PDF A4, XML firmado y envio BETA.</p>
+                                <button class="btn blue" id="runInvoiceFlowBtn">Probar factura</button>
+                            </div>
+                            <div class="flow-card">
+                                <header>
+                                    <div class="step-title"><span class="step-number">3</span> Boleta</div>
+                                    <span id="flowBoletaStatus" class="pill idle">sin crear</span>
+                                </header>
+                                <p>Genera B001 con DNI cliente, PDF ticket, XML firmado y envio BETA.</p>
+                                <button class="btn blue" id="runBoletaFlowBtn">Probar boleta</button>
+                            </div>
+                        </div>
+
+                        <div class="demo-strip">
+                            <div class="demo-item">
+                                <span>Emisor beta</span>
+                                <strong>20161515648 / MODDATOS</strong>
+                            </div>
+                            <div class="demo-item">
+                                <span>Factura</span>
+                                <strong>F001, cliente RUC 20600055519</strong>
+                            </div>
+                            <div class="demo-item">
+                                <span>Boleta</span>
+                                <strong>B001, cliente DNI 12345678</strong>
+                            </div>
+                            <div class="demo-item">
+                                <span>Ambiente</span>
+                                <strong>SUNAT BETA UBL 2.1</strong>
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button class="btn secondary" id="resetDemoBtn">Restaurar datos demo</button>
+                            <button class="btn secondary" id="openResponsesBtn">Ver respuestas</button>
+                        </div>
+                    </div>
+                </article>
+
                 <article class="panel">
                     <div class="panel-head">
                         <h3>Sistema</h3>
@@ -834,6 +978,42 @@
 </div>
 
 <script>
+    const demoData = {
+        user: {
+            name: 'Admin SUNAT',
+            email: 'admin@demo.pe',
+            password: 'Admin1234',
+        },
+        company: {
+            id: '1',
+            branchId: '1',
+            ruc: '20161515648',
+            razonSocial: 'EMPRESA DE PRUEBA SUNAT',
+            nombreComercial: 'PRUEBAS CPE',
+            direccion: 'AV. LIMA 123',
+            ubigeo: '150101',
+            distrito: 'LIMA',
+            provincia: 'LIMA',
+            departamento: 'LIMA',
+            telefono: '999999999',
+            email: 'facturacion@demo.pe',
+            usuarioSol: 'MODDATOS',
+            claveSol: 'MODDATOS',
+        },
+        invoice: {
+            serie: 'F001',
+            clientDoc: '20600055519',
+            clientName: 'CLIENTE FACTURA DEMO SAC',
+            price: '100.00',
+        },
+        boleta: {
+            serie: 'B001',
+            clientDoc: '12345678',
+            clientName: 'CONSUMIDOR DEMO',
+            price: '35.00',
+        },
+    };
+
     const state = {
         baseUrl: localStorage.getItem('sunatApiBase') || window.location.origin,
         token: localStorage.getItem('sunatToken') || '',
@@ -844,8 +1024,49 @@
 
     const $ = (id) => document.getElementById(id);
 
-    const today = new Date();
-    $('issueDate').value = today.toISOString().slice(0, 10);
+    function todayInPeru() {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Lima',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(new Date());
+
+        const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+        return `${map.year}-${map.month}-${map.day}`;
+    }
+
+    function applyDemoData() {
+        $('userName').value = demoData.user.name;
+        $('userEmail').value = demoData.user.email;
+        $('userPassword').value = demoData.user.password;
+        $('companyId').value = localStorage.getItem('companyId') || demoData.company.id;
+        $('branchId').value = localStorage.getItem('branchId') || demoData.company.branchId;
+        $('issueDate').value = todayInPeru();
+        $('companyRuc').value = demoData.company.ruc;
+        $('companyName').value = demoData.company.razonSocial;
+        $('companyTrade').value = demoData.company.nombreComercial;
+        $('companyAddress').value = demoData.company.direccion;
+        $('companyUbigeo').value = demoData.company.ubigeo;
+        $('companyDistrict').value = demoData.company.distrito;
+        $('companyProvince').value = demoData.company.provincia;
+        $('companyDepartment').value = demoData.company.departamento;
+        $('solUser').value = demoData.company.usuarioSol;
+        $('solPassword').value = demoData.company.claveSol;
+        $('companyEmail').value = demoData.company.email;
+        $('companyPhone').value = demoData.company.telefono;
+        $('sunatEnvironment').value = 'beta';
+        $('invoiceSerie').value = demoData.invoice.serie;
+        $('invoiceClientDoc').value = demoData.invoice.clientDoc;
+        $('invoiceClientName').value = demoData.invoice.clientName;
+        $('invoicePrice').value = demoData.invoice.price;
+        $('boletaSerie').value = demoData.boleta.serie;
+        $('boletaClientDoc').value = demoData.boleta.clientDoc;
+        $('boletaClientName').value = demoData.boleta.clientName;
+        $('boletaPrice').value = demoData.boleta.price;
+    }
+
+    applyDemoData();
     $('baseUrl').value = state.baseUrl;
     $('token').value = state.token;
     $('lastInvoiceId').textContent = state.lastInvoiceId || '-';
@@ -862,6 +1083,7 @@
         setPill($('tokenStatus'), state.token ? 'activo' : 'vacio', state.token ? 'ok' : 'idle');
         setPill($('companyStatus'), hasCompany ? 'listo' : 'sin datos', hasCompany ? 'ok' : 'idle');
         updateSunatBadges();
+        updateFlowBadges();
     }
 
     function certificateIsReady(status = state.sunatStatus) {
@@ -878,6 +1100,21 @@
         setPill($('certificateStatus'), hasCertificate ? 'cargado' : 'sin archivo', hasCertificate ? 'ok' : 'bad');
         setPill($('sendReadyStatus'), canSend ? 'listo' : 'bloqueado', canSend ? 'ok' : 'warn');
         setPill($('sunatReadyStatus'), canSend ? 'listo' : 'pendiente', canSend ? 'ok' : 'warn');
+    }
+
+    function updateFlowBadges() {
+        const systemReady = Boolean(state.sunatStatus?.setup_progress?.step_2_seeders ?? state.sunatStatus?.ready_for_use);
+        const hasCompany = Boolean($('companyId').value && $('branchId').value);
+        const betaReady = betaDemoReady();
+
+        setPill($('flowSystemStatus'), betaReady ? 'listo' : (systemReady ? 'base ok' : 'pendiente'), betaReady ? 'ok' : (systemReady ? 'warn' : 'idle'));
+        setPill($('flowInvoiceStatus'), state.lastInvoiceId ? `id ${state.lastInvoiceId}` : 'sin crear', state.lastInvoiceId ? 'ok' : 'idle');
+        setPill($('flowBoletaStatus'), state.lastBoletaId ? `id ${state.lastBoletaId}` : 'sin crear', state.lastBoletaId ? 'ok' : 'idle');
+    }
+
+    function betaDemoReady() {
+        const hasCompany = Boolean($('companyId').value && $('branchId').value);
+        return Boolean(state.token && hasCompany && certificateIsReady());
     }
 
     function setResult(label, response) {
@@ -1082,6 +1319,141 @@
         }
     }
 
+    async function loginDemoUser() {
+        const response = await api('/api/auth/login', {
+            method: 'POST',
+            body: {
+                email: $('userEmail').value,
+                password: $('userPassword').value,
+            },
+        });
+
+        if (response.data?.access_token) saveToken(response.data.access_token);
+        return response;
+    }
+
+    async function initializeDemoUser() {
+        const response = await api('/api/auth/initialize', {
+            method: 'POST',
+            body: {
+                name: $('userName').value,
+                email: $('userEmail').value,
+                password: $('userPassword').value,
+            },
+        });
+
+        if (response.data?.access_token) saveToken(response.data.access_token);
+        return response;
+    }
+
+    async function ensureDemoSession() {
+        const info = await api('/api/system/info');
+        const authResponse = info.data?.system_initialized
+            ? await loginDemoUser()
+            : await initializeDemoUser();
+
+        if (!authResponse.ok) {
+            throw new Error(authResponse.data?.message || 'No se pudo iniciar sesion demo');
+        }
+
+        return authResponse;
+    }
+
+    function saveCompanyContext(companyId, branchId) {
+        if (companyId) {
+            $('companyId').value = companyId;
+            localStorage.setItem('companyId', String(companyId));
+        }
+
+        if (branchId) {
+            $('branchId').value = branchId;
+            localStorage.setItem('branchId', String(branchId));
+        }
+
+        updateStateBadges();
+    }
+
+    async function prepareBetaDemo() {
+        applyDemoData();
+        refreshPayloads();
+
+        const migrateResponse = await api('/api/setup/migrate', { method: 'POST', body: {} });
+        if (!migrateResponse.ok) return migrateResponse;
+
+        const seedResponse = await api('/api/setup/seed', { method: 'POST', body: {} });
+        if (!seedResponse.ok) return seedResponse;
+
+        const authResponse = await ensureDemoSession();
+
+        const setupResponse = await api('/api/v1/setup/complete', { method: 'POST', body: setupPayload() });
+        if (!setupResponse.ok) return setupResponse;
+
+        saveCompanyContext(setupResponse.data?.company?.id, setupResponse.data?.branch?.id);
+        await loadCompanies();
+        await fetchSetupStatus();
+
+        const companyId = $('companyId').value;
+        const validationResponse = await api(`/api/v1/companies/${companyId}/config/validate/services`);
+
+        return {
+            ok: validationResponse.ok,
+            status: validationResponse.status,
+            data: {
+                message: 'Ambiente beta preparado',
+                token: Boolean(state.token),
+                company_id: Number($('companyId').value),
+                branch_id: Number($('branchId').value),
+                certificate_ready: certificateIsReady(),
+                auth: authResponse.data?.message,
+                setup: setupResponse.data,
+                validation: validationResponse.data,
+            },
+        };
+    }
+
+    async function ensureBetaPrepared() {
+        if (betaDemoReady()) {
+            return { ok: true, status: 'LOCAL', data: { message: 'Ambiente beta ya estaba listo' } };
+        }
+
+        const response = await prepareBetaDemo();
+        if (!response.ok) return response;
+
+        return response;
+    }
+
+    async function runInvoiceFullFlow() {
+        const betaResponse = await ensureBetaPrepared();
+        if (!betaResponse.ok) return betaResponse;
+
+        const createResponse = await api('/api/v1/invoices', { method: 'POST', body: invoicePayload() });
+        if (!createResponse.ok) return createResponse;
+
+        captureCreatedDocument('invoice', createResponse);
+
+        const pdfResponse = await api(`/api/v1/invoices/${state.lastInvoiceId}/generate-pdf?format=A4`, { method: 'POST', body: {} });
+        if (!pdfResponse.ok) return pdfResponse;
+
+        await ensureSunatReady();
+        return api(`/api/v1/invoices/${state.lastInvoiceId}/send-sunat`, { method: 'POST', body: {} });
+    }
+
+    async function runBoletaFullFlow() {
+        const betaResponse = await ensureBetaPrepared();
+        if (!betaResponse.ok) return betaResponse;
+
+        const createResponse = await api('/api/v1/boletas', { method: 'POST', body: boletaPayload() });
+        if (!createResponse.ok) return createResponse;
+
+        captureCreatedDocument('boleta', createResponse);
+
+        const pdfResponse = await api(`/api/v1/boletas/${state.lastBoletaId}/generate-pdf?format=ticket`, { method: 'POST', body: {} });
+        if (!pdfResponse.ok) return pdfResponse;
+
+        await ensureSunatReady();
+        return api(`/api/v1/boletas/${state.lastBoletaId}/send-sunat`, { method: 'POST', body: {} });
+    }
+
     function captureCreatedDocument(type, response) {
         const id = response.data?.data?.id;
         if (!id) return;
@@ -1135,8 +1507,8 @@
 
         const first = companies[0];
         const branch = first?.branches?.[0];
-        if (first && !$('companyId').value) $('companyId').value = first.id;
-        if (branch && !$('branchId').value) $('branchId').value = branch.id;
+        if (first && !$('companyId').value) saveCompanyContext(first.id, null);
+        if (branch && !$('branchId').value) saveCompanyContext(null, branch.id);
         updateStateBadges();
 
         return response;
@@ -1155,31 +1527,20 @@
     $('migrateBtn').addEventListener('click', () => run('POST /api/setup/migrate', () => api('/api/setup/migrate', { method: 'POST', body: {} })));
     $('seedBtn').addEventListener('click', () => run('POST /api/setup/seed', () => api('/api/setup/seed', { method: 'POST', body: {} })));
     $('setupStatusBtn').addEventListener('click', () => run('GET /api/setup/status', fetchSetupStatus));
+    $('runBetaPrepBtn').addEventListener('click', () => run('Flujo 1 / preparar beta', prepareBetaDemo));
+    $('runInvoiceFlowBtn').addEventListener('click', () => run('Flujo 2 / factura completa', runInvoiceFullFlow));
+    $('runBoletaFlowBtn').addEventListener('click', () => run('Flujo 3 / boleta completa', runBoletaFullFlow));
+    $('resetDemoBtn').addEventListener('click', () => {
+        applyDemoData();
+        refreshPayloads();
+        updateStateBadges();
+        setResult('local demo data', { ok: true, status: 'LOCAL', data: { message: 'Datos demo restaurados' } });
+    });
+    $('openResponsesBtn').addEventListener('click', () => document.querySelector('[data-tab="responses"]').click());
 
-    $('initializeBtn').addEventListener('click', () => run('POST /api/auth/initialize', async () => {
-        const response = await api('/api/auth/initialize', {
-            method: 'POST',
-            body: {
-                name: $('userName').value,
-                email: $('userEmail').value,
-                password: $('userPassword').value,
-            },
-        });
-        if (response.data?.access_token) saveToken(response.data.access_token);
-        return response;
-    }));
+    $('initializeBtn').addEventListener('click', () => run('POST /api/auth/initialize', initializeDemoUser));
 
-    $('loginBtn').addEventListener('click', () => run('POST /api/auth/login', async () => {
-        const response = await api('/api/auth/login', {
-            method: 'POST',
-            body: {
-                email: $('userEmail').value,
-                password: $('userPassword').value,
-            },
-        });
-        if (response.data?.access_token) saveToken(response.data.access_token);
-        return response;
-    }));
+    $('loginBtn').addEventListener('click', () => run('POST /api/auth/login', loginDemoUser));
 
     $('meBtn').addEventListener('click', () => run('GET /api/v1/auth/me', () => api('/api/v1/auth/me')));
     $('clearTokenBtn').addEventListener('click', () => {
@@ -1193,8 +1554,7 @@
         if (response.ok) {
             const companyId = response.data?.company?.id;
             const branchId = response.data?.branch?.id;
-            if (companyId) $('companyId').value = companyId;
-            if (branchId) $('branchId').value = branchId;
+            saveCompanyContext(companyId, branchId);
             await loadCompanies();
             await fetchSetupStatus();
         }
@@ -1295,6 +1655,8 @@
         $(id).addEventListener('change', refreshPayloads);
         $(id).addEventListener('input', refreshPayloads);
     });
+    $('companyId').addEventListener('input', () => localStorage.setItem('companyId', $('companyId').value));
+    $('branchId').addEventListener('input', () => localStorage.setItem('branchId', $('branchId').value));
     $('sunatEnvironment').addEventListener('change', () => {
         state.sunatStatus = null;
         updateSunatBadges();
@@ -1302,6 +1664,8 @@
 
     refreshPayloads();
     updateStateBadges();
+    fetchSetupStatus();
+    if (state.token) loadCompanies();
 </script>
 </body>
 </html>
