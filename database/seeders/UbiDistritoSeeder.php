@@ -20,8 +20,13 @@ class UbiDistritoSeeder extends Seeder
             return;
         }
         
-        // Temporalmente desactivar las restricciones de clave foránea
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // Temporalmente desactivar restricciones de clave foránea según motor.
+        $driver = \DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            \DB::statement('PRAGMA foreign_keys = OFF;');
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
+            \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         
         $file = fopen($filePath, 'r');
         $header = fgetcsv($file, 0, '|'); // Skip header line
@@ -43,7 +48,7 @@ class UbiDistritoSeeder extends Seeder
                 $count++;
                 
                 if (count($batch) >= $batchSize) {
-                    UbiDistrito::insert($batch);
+                    UbiDistrito::insertOrIgnore($batch);
                     $batch = [];
                     $this->command->info("Inserted batch of {$batchSize} records. Total: {$count}");
                 }
@@ -52,13 +57,17 @@ class UbiDistritoSeeder extends Seeder
         
         // Insert remaining records
         if (!empty($batch)) {
-            UbiDistrito::insert($batch);
+            UbiDistrito::insertOrIgnore($batch);
         }
         
         fclose($file);
         
-        // Reactivar las restricciones de clave foránea
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // Reactivar las restricciones de clave foránea.
+        if ($driver === 'sqlite') {
+            \DB::statement('PRAGMA foreign_keys = ON;');
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
+            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
         
         $this->command->info("Successfully imported {$count} districts from data_ubi.txt");
     }

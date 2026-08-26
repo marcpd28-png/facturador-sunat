@@ -40,6 +40,6 @@ class UbiRegionesSeeder extends Seeder
             ['id' => '240000', 'nombre' => 'Tumbes'],
             ['id' => '250000', 'nombre' => 'Ucayali'],
         ];
-        DB::table('ubi_regiones')->insert($regiones);
+        DB::table('ubi_regiones')->insertOrIgnore($regiones);
     }
 }

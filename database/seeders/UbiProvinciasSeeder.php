@@ -210,6 +210,6 @@ class UbiProvinciasSeeder extends Seeder
             ['id' => '250400', 'nombre' => 'Purús', 'region_id' => '250000'],
         ];
 
-        DB::table('ubi_provincias')->insert($provincias);
+        DB::table('ubi_provincias')->insertOrIgnore($provincias);
     }
 }
