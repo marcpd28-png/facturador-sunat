@@ -162,6 +162,20 @@ class FileService
         );
     }
 
+    public function fileExists(?string $path): bool
+    {
+        return !empty($path) && Storage::disk('public')->exists($path);
+    }
+
+    public function downloadFile(string $path, string $downloadName, array $headers = [])
+    {
+        if (!$this->fileExists($path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->download($path, $downloadName, $headers);
+    }
+
     public function createDirectoryStructure(): void
     {
         // Tipos de comprobantes

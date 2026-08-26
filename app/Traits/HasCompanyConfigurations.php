@@ -345,12 +345,55 @@ trait HasCompanyConfigurations
     public function getSunatEndpoints(string $serviceType = 'facturacion'): array
     {
         $environment = $this->modo_produccion ? 'produccion' : 'beta';
+        $defaults = $this->getDefaultSunatEndpoints($serviceType, $environment);
         
-        return $this->getConfig('service_endpoints', $environment, $serviceType, [
-            'endpoint' => '',
-            'wsdl' => '',
-            'timeout' => 30
-        ]);
+        return array_merge(
+            $defaults,
+            $this->getConfig('service_endpoints', $environment, $serviceType, []) ?? []
+        );
+    }
+
+    protected function getDefaultSunatEndpoints(string $serviceType, string $environment): array
+    {
+        $isProduction = $environment === 'produccion';
+
+        $defaults = [
+            'facturacion' => [
+                'endpoint' => $isProduction
+                    ? ($this->endpoint_produccion ?: 'https://e-factura.sunat.gob.pe/ol-ti-itcpfegem/billService')
+                    : ($this->endpoint_beta ?: 'https://e-beta.sunat.gob.pe/ol-ti-itcpfegem-beta/billService'),
+                'timeout' => $isProduction ? 45 : 30,
+            ],
+            'guias_remision' => [
+                'endpoint' => $isProduction
+                    ? 'https://api-cpe.sunat.gob.pe/v1/'
+                    : 'https://api-cpe-beta.sunat.gob.pe/v1/',
+                'api_endpoint' => $isProduction
+                    ? 'https://api-cpe.sunat.gob.pe/v1/'
+                    : 'https://api-cpe-beta.sunat.gob.pe/v1/',
+                'wsdl' => $isProduction
+                    ? 'https://e-guiaremision.sunat.gob.pe/ol-ti-itemision-guia-gem/billService?wsdl'
+                    : 'https://e-beta.sunat.gob.pe/ol-ti-itcpgre-beta/billService?wsdl',
+                'timeout' => $isProduction ? 45 : 30,
+            ],
+            'resumenes_diarios' => [
+                'endpoint' => $isProduction
+                    ? 'https://e-factura.sunat.gob.pe/ol-ti-itemision-otroscpe-gem/billService'
+                    : 'https://e-beta.sunat.gob.pe/ol-ti-itemision-otroscpe-gem-beta/billService',
+                'timeout' => 60,
+            ],
+            'comunicaciones_baja' => [
+                'endpoint' => $isProduction
+                    ? 'https://e-factura.sunat.gob.pe/ol-ti-itemision-otroscpe-gem/billService'
+                    : 'https://e-beta.sunat.gob.pe/ol-ti-itemision-otroscpe-gem-beta/billService',
+                'timeout' => 60,
+            ],
+        ];
+
+        $config = $defaults[$serviceType] ?? $defaults['facturacion'];
+        $config['wsdl'] = $config['wsdl'] ?? $config['endpoint'] . '?wsdl';
+
+        return $config;
     }
 
     /**

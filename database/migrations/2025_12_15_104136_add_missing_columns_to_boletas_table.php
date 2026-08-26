@@ -11,19 +11,36 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('boletas', function (Blueprint $table) {
-            // Agregar columna para el método de envío (individual o resumen_diario)
-            $table->string('metodo_envio', 20)->default('individual')->after('moneda');
+        if (!Schema::hasColumn('boletas', 'metodo_envio')) {
+            Schema::table('boletas', function (Blueprint $table) {
+                $table->string('metodo_envio', 20)->default('individual')->after('moneda');
+            });
+        }
 
-            // Agregar relación con resumen diario (nullable porque solo aplica si metodo_envio es resumen_diario)
-            // Sin foreign key por ahora, se agregará cuando exista la tabla daily_summaries
-            $table->unsignedBigInteger('daily_summary_id')->nullable()->after('client_id')->index();
+        if (!Schema::hasColumn('boletas', 'daily_summary_id')) {
+            Schema::table('boletas', function (Blueprint $table) {
+                // Se deja sin foreign key porque la tabla daily_summaries no existe en esta rama.
+                $table->unsignedBigInteger('daily_summary_id')->nullable()->after('client_id')->index();
+            });
+        }
 
-            // Agregar columnas para impuestos adicionales
-            $table->decimal('mto_igv_gratuitas', 12, 2)->default(0)->after('mto_oper_gratuitas');
-            $table->decimal('mto_base_ivap', 12, 2)->default(0)->after('mto_igv');
-            $table->decimal('mto_ivap', 12, 2)->default(0)->after('mto_base_ivap');
-        });
+        if (!Schema::hasColumn('boletas', 'mto_igv_gratuitas')) {
+            Schema::table('boletas', function (Blueprint $table) {
+                $table->decimal('mto_igv_gratuitas', 12, 2)->default(0)->after('mto_oper_gratuitas');
+            });
+        }
+
+        if (!Schema::hasColumn('boletas', 'mto_base_ivap')) {
+            Schema::table('boletas', function (Blueprint $table) {
+                $table->decimal('mto_base_ivap', 12, 2)->default(0)->after('mto_igv');
+            });
+        }
+
+        if (!Schema::hasColumn('boletas', 'mto_ivap')) {
+            Schema::table('boletas', function (Blueprint $table) {
+                $table->decimal('mto_ivap', 12, 2)->default(0)->after('mto_base_ivap');
+            });
+        }
     }
 
     /**
@@ -31,14 +48,20 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('boletas', function (Blueprint $table) {
-            $table->dropColumn([
-                'metodo_envio',
-                'daily_summary_id',
-                'mto_igv_gratuitas',
-                'mto_base_ivap',
-                'mto_ivap'
-            ]);
-        });
+        $columns = [
+            'metodo_envio',
+            'daily_summary_id',
+            'mto_igv_gratuitas',
+            'mto_base_ivap',
+            'mto_ivap',
+        ];
+
+        foreach ($columns as $column) {
+            if (Schema::hasColumn('boletas', $column)) {
+                Schema::table('boletas', function (Blueprint $table) use ($column) {
+                    $table->dropColumn($column);
+                });
+            }
+        }
     }
 };
