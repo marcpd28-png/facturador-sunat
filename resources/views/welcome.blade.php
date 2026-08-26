@@ -1003,6 +1003,16 @@
         return JSON.parse($(id).value);
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+        }[char]));
+    }
+
     async function loadCompanies() {
         const response = await api('/api/v1/companies');
         if (!response.ok) return response;
@@ -1012,13 +1022,13 @@
         $('companiesTable').innerHTML = companies.length
             ? companies.map((company) => {
                 const branchText = (company.branches || [])
-                    .map((branch) => `${branch.id}: ${branch.nombre || branch.codigo}`)
+                    .map((branch) => `${escapeHtml(branch.id)}: ${escapeHtml(branch.nombre || branch.codigo)}`)
                     .join('<br>') || '-';
 
                 return `<tr>
-                    <td>${company.id}</td>
-                    <td>${company.ruc}</td>
-                    <td>${company.razon_social}</td>
+                    <td>${escapeHtml(company.id)}</td>
+                    <td>${escapeHtml(company.ruc)}</td>
+                    <td>${escapeHtml(company.razon_social)}</td>
                     <td>${branchText}</td>
                     <td>${company.modo_produccion ? 'produccion' : 'beta'}</td>
                 </tr>`;
