@@ -32,6 +32,7 @@ use Greenter\Model\Voided\Voided;
 use Greenter\Model\Voided\VoidedDetail;
 use Greenter\Ws\Services\SunatEndpoints;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class GreenterService
@@ -56,22 +57,13 @@ class GreenterService
         
         $see->setService($endpoint);
         
-        // Configurar certificado cargando desde archivo
         try {
-            $certificadoPath = storage_path('app/public/certificado/certificado.pem');
-            
-            if (!file_exists($certificadoPath)) {
-                throw new Exception("Archivo de certificado no encontrado: " . $certificadoPath);
-            }
-            
-            $certificadoContent = file_get_contents($certificadoPath);
-            
-            if ($certificadoContent === false) {
-                throw new Exception("No se pudo leer el archivo de certificado");
-            }
-            
+            $certificadoContent = $this->loadCertificateContent();
             $see->setCertificate($certificadoContent);
-            Log::info("Certificado cargado desde archivo: " . $certificadoPath);
+            Log::info("Certificado cargado para facturación", [
+                'company_id' => $this->company->id,
+                'ruc' => $this->company->ruc,
+            ]);
         } catch (Exception $e) {
             Log::error("Error al configurar certificado: " . $e->getMessage());
             throw new Exception("Error al configurar certificado: " . $e->getMessage());
@@ -108,22 +100,13 @@ class GreenterService
             'cpe' => $endpoint,
         ]);
         
-        // Configurar certificado
         try {
-            $certificadoPath = storage_path('app/public/certificado/certificado.pem');
-            
-            if (!file_exists($certificadoPath)) {
-                throw new Exception("Archivo de certificado no encontrado para GRE: " . $certificadoPath);
-            }
-            
-            $certificadoContent = file_get_contents($certificadoPath);
-            
-            if ($certificadoContent === false) {
-                throw new Exception("No se pudo leer el archivo de certificado para GRE");
-            }
-            
+            $certificadoContent = $this->loadCertificateContent();
             $api->setCertificate($certificadoContent);
-            Log::info("Certificado GRE cargado desde archivo: " . $certificadoPath);
+            Log::info("Certificado GRE cargado", [
+                'company_id' => $this->company->id,
+                'ruc' => $this->company->ruc,
+            ]);
         } catch (Exception $e) {
             Log::error("Error al configurar certificado para GRE: " . $e->getMessage());
             throw new Exception("Error al configurar certificado para GRE: " . $e->getMessage());
@@ -153,6 +136,22 @@ class GreenterService
         ]);
         
         return $api;
+    }
+
+    protected function loadCertificateContent(): string
+    {
+        $companyPath = $this->company->certificado_pem;
+        if ($companyPath && Storage::disk('public')->exists($companyPath)) {
+            return Storage::disk('public')->get($companyPath);
+        }
+
+        $fallbackPath = 'certificado/certificado.pem';
+        if (Storage::disk('public')->exists($fallbackPath)) {
+            return Storage::disk('public')->get($fallbackPath);
+        }
+
+        $expectedPath = storage_path("app/public/{$fallbackPath}");
+        throw new Exception("Archivo de certificado no encontrado: {$expectedPath}");
     }
 
     public function getGreenterCompany(): GreenterCompany

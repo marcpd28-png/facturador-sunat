@@ -287,6 +287,7 @@
         }
 
         input,
+        select,
         textarea {
             width: 100%;
             border: 1px solid #cfc5b3;
@@ -298,9 +299,14 @@
         }
 
         input:focus,
+        select:focus,
         textarea:focus {
             border-color: var(--blue);
             box-shadow: 0 0 0 3px rgba(0, 94, 184, .16);
+        }
+
+        input[type="file"] {
+            padding: 8px 10px;
         }
 
         textarea {
@@ -577,7 +583,7 @@
                             </div>
                             <div class="field">
                                 <label for="solPassword">Clave SOL</label>
-                                <input id="solPassword" type="password" value="moddatos">
+                                <input id="solPassword" type="password" value="MODDATOS">
                             </div>
                             <div class="field">
                                 <label for="companyEmail">Email</label>
@@ -591,6 +597,51 @@
                         <div class="actions">
                             <button class="btn green" id="setupCompanyBtn">Guardar setup</button>
                             <button class="btn blue" id="loadCompaniesBtn">Cargar empresas</button>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel wide">
+                    <div class="panel-head">
+                        <h3>Integracion SUNAT</h3>
+                        <span class="pill idle" id="sunatReadyStatus">pendiente</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="status-stack">
+                            <div class="status-line">
+                                <span>Ambiente</span>
+                                <strong id="sunatEnvironmentStatus" class="pill idle">beta</strong>
+                            </div>
+                            <div class="status-line">
+                                <span>Certificado</span>
+                                <strong id="certificateStatus" class="pill idle">sin archivo</strong>
+                            </div>
+                            <div class="status-line">
+                                <span>Envio SUNAT</span>
+                                <strong id="sendReadyStatus" class="pill idle">bloqueado</strong>
+                            </div>
+                        </div>
+                        <div class="field-grid three">
+                            <div class="field">
+                                <label for="sunatEnvironment">Ambiente</label>
+                                <select id="sunatEnvironment">
+                                    <option value="beta" selected>Beta</option>
+                                    <option value="produccion">Produccion</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="certificateFile">Certificado PEM</label>
+                                <input id="certificateFile" type="file" accept=".pem,.crt,.cer,.txt">
+                            </div>
+                            <div class="field">
+                                <label for="certificatePassword">Clave certificado</label>
+                                <input id="certificatePassword" type="password" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn secondary" id="setupStatusBtn">Checklist</button>
+                            <button class="btn green" id="configureSunatBtn">Guardar SUNAT</button>
+                            <button class="btn blue" id="validateServicesBtn">Validar servicios</button>
                         </div>
                     </div>
                 </article>
@@ -788,6 +839,7 @@
         token: localStorage.getItem('sunatToken') || '',
         lastInvoiceId: localStorage.getItem('lastInvoiceId') || '',
         lastBoletaId: localStorage.getItem('lastBoletaId') || '',
+        sunatStatus: null,
     };
 
     const $ = (id) => document.getElementById(id);
@@ -798,6 +850,7 @@
     $('token').value = state.token;
     $('lastInvoiceId').textContent = state.lastInvoiceId || '-';
     $('lastBoletaId').textContent = state.lastBoletaId || '-';
+    $('sunatEnvironmentStatus').textContent = $('sunatEnvironment').value;
 
     function setPill(el, label, type = 'idle') {
         el.textContent = label;
@@ -808,6 +861,23 @@
         const hasCompany = $('companyId').value && $('branchId').value;
         setPill($('tokenStatus'), state.token ? 'activo' : 'vacio', state.token ? 'ok' : 'idle');
         setPill($('companyStatus'), hasCompany ? 'listo' : 'sin datos', hasCompany ? 'ok' : 'idle');
+        updateSunatBadges();
+    }
+
+    function certificateIsReady(status = state.sunatStatus) {
+        return Boolean(status?.certificate_exists || status?.certificates_directory?.certificado_file_exists);
+    }
+
+    function updateSunatBadges(status = state.sunatStatus) {
+        const environment = status?.company_environment || $('sunatEnvironment').value || 'beta';
+        const hasCompany = Boolean($('companyId').value) || Number(status?.companies_count || 0) > 0;
+        const hasCertificate = certificateIsReady(status);
+        const canSend = Boolean(state.token && hasCompany && hasCertificate);
+
+        setPill($('sunatEnvironmentStatus'), environment, environment === 'produccion' ? 'warn' : 'idle');
+        setPill($('certificateStatus'), hasCertificate ? 'cargado' : 'sin archivo', hasCertificate ? 'ok' : 'bad');
+        setPill($('sendReadyStatus'), canSend ? 'listo' : 'bloqueado', canSend ? 'ok' : 'warn');
+        setPill($('sunatReadyStatus'), canSend ? 'listo' : 'pendiente', canSend ? 'ok' : 'warn');
     }
 
     function setResult(label, response) {
@@ -963,9 +1033,11 @@
     }
 
     function setupPayload() {
+        const environment = $('sunatEnvironment').value;
+
         return {
-            environment: 'beta',
-            modo_produccion: false,
+            environment,
+            modo_produccion: environment === 'produccion',
             activo: true,
             company: {
                 ruc: $('companyRuc').value,
@@ -982,6 +1054,32 @@
                 clave_sol: $('solPassword').value,
             },
         };
+    }
+
+    async function fetchSetupStatus() {
+        const response = await api('/api/setup/status');
+        if (response.ok) {
+            state.sunatStatus = response.data?.system_status || null;
+            updateSunatBadges(state.sunatStatus);
+        }
+        return response;
+    }
+
+    async function ensureSunatReady() {
+        const response = await fetchSetupStatus();
+        const hasCompany = Boolean($('companyId').value) || Number(state.sunatStatus?.companies_count || 0) > 0;
+
+        if (!response.ok) {
+            throw new Error('No se pudo validar el estado SUNAT');
+        }
+
+        if (!hasCompany) {
+            throw new Error('Primero registra o carga una empresa');
+        }
+
+        if (!certificateIsReady()) {
+            throw new Error('Falta cargar el certificado PEM antes de enviar a SUNAT');
+        }
     }
 
     function captureCreatedDocument(type, response) {
@@ -1056,6 +1154,7 @@
     $('checkStatusBtn').addEventListener('click', () => run('GET /api/system/info', () => api('/api/system/info')));
     $('migrateBtn').addEventListener('click', () => run('POST /api/setup/migrate', () => api('/api/setup/migrate', { method: 'POST', body: {} })));
     $('seedBtn').addEventListener('click', () => run('POST /api/setup/seed', () => api('/api/setup/seed', { method: 'POST', body: {} })));
+    $('setupStatusBtn').addEventListener('click', () => run('GET /api/setup/status', fetchSetupStatus));
 
     $('initializeBtn').addEventListener('click', () => run('POST /api/auth/initialize', async () => {
         const response = await api('/api/auth/initialize', {
@@ -1097,11 +1196,45 @@
             if (companyId) $('companyId').value = companyId;
             if (branchId) $('branchId').value = branchId;
             await loadCompanies();
+            await fetchSetupStatus();
         }
         return response;
     }));
 
     $('loadCompaniesBtn').addEventListener('click', () => run('GET /api/v1/companies', loadCompanies));
+    $('configureSunatBtn').addEventListener('click', () => run('POST /api/v1/setup/configure-sunat', async () => {
+        const companyId = $('companyId').value;
+        if (!companyId) throw new Error('Primero registra o carga una empresa');
+
+        const formData = new FormData();
+        formData.append('company_id', companyId);
+        formData.append('environment', $('sunatEnvironment').value);
+
+        const certificate = $('certificateFile').files[0];
+        if (certificate) formData.append('certificate_file', certificate);
+
+        const certificatePassword = $('certificatePassword').value;
+        if (certificatePassword) formData.append('certificate_password', certificatePassword);
+
+        const response = await api('/api/v1/setup/configure-sunat', { method: 'POST', body: formData });
+        if (response.ok) {
+            await loadCompanies();
+            await fetchSetupStatus();
+        }
+        return response;
+    }));
+    $('validateServicesBtn').addEventListener('click', () => run('GET /api/v1/companies/{id}/config/validate/services', async () => {
+        const companyId = $('companyId').value;
+        if (!companyId) throw new Error('Primero registra o carga una empresa');
+
+        const response = await api(`/api/v1/companies/${companyId}/config/validate/services`);
+        const valid = Boolean(response.data?.data?.status?.overall_valid);
+        if (response.ok) {
+            setPill($('sendReadyStatus'), valid ? 'listo' : 'bloqueado', valid ? 'ok' : 'warn');
+            setPill($('sunatReadyStatus'), valid ? 'listo' : 'pendiente', valid ? 'ok' : 'warn');
+        }
+        return response;
+    }));
 
     $('buildInvoiceBtn').addEventListener('click', () => {
         $('invoicePayload').value = JSON.stringify(invoicePayload(), null, 2);
@@ -1141,12 +1274,14 @@
         if (!state.lastBoletaId) throw new Error('No hay boleta creada');
         return api(`/api/v1/boletas/${state.lastBoletaId}/generate-pdf?format=ticket`, { method: 'POST', body: {} });
     }));
-    $('sendInvoiceBtn').addEventListener('click', () => run('POST /api/v1/invoices/{id}/send-sunat', () => {
+    $('sendInvoiceBtn').addEventListener('click', () => run('POST /api/v1/invoices/{id}/send-sunat', async () => {
         if (!state.lastInvoiceId) throw new Error('No hay factura creada');
+        await ensureSunatReady();
         return api(`/api/v1/invoices/${state.lastInvoiceId}/send-sunat`, { method: 'POST', body: {} });
     }));
-    $('sendBoletaBtn').addEventListener('click', () => run('POST /api/v1/boletas/{id}/send-sunat', () => {
+    $('sendBoletaBtn').addEventListener('click', () => run('POST /api/v1/boletas/{id}/send-sunat', async () => {
         if (!state.lastBoletaId) throw new Error('No hay boleta creada');
+        await ensureSunatReady();
         return api(`/api/v1/boletas/${state.lastBoletaId}/send-sunat`, { method: 'POST', body: {} });
     }));
 
@@ -1159,6 +1294,10 @@
     ['companyId', 'branchId', 'issueDate', 'invoiceSerie', 'invoiceClientDoc', 'invoiceClientName', 'invoicePrice', 'boletaSerie', 'boletaClientDoc', 'boletaClientName', 'boletaPrice'].forEach((id) => {
         $(id).addEventListener('change', refreshPayloads);
         $(id).addEventListener('input', refreshPayloads);
+    });
+    $('sunatEnvironment').addEventListener('change', () => {
+        state.sunatStatus = null;
+        updateSunatBadges();
     });
 
     refreshPayloads();

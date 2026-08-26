@@ -56,7 +56,7 @@ class CompanyConfiguration extends Model
         return $query->where('service_type', $serviceType);
     }
 
-    public function scopeCredentials($query, string $serviceType = null, string $environment = null)
+    public function scopeCredentials($query, ?string $serviceType = null, ?string $environment = null)
     {
         $query = $query->where('config_type', 'sunat_credentials');
         

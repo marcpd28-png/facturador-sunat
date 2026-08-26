@@ -585,14 +585,7 @@ class DocumentService
 
     protected function convertNumberToWords(float $numero, string $moneda): string
     {
-        $monedaName = $moneda === 'PEN' ? 'SOLES' : 'DÓLARES AMERICANOS';
-        $entero = intval($numero);
-        $decimales = intval(($numero - $entero) * 100);
-        
-        // Esta es una implementación básica, se puede mejorar con una librería
-        $letras = $this->numeroALetras($entero);
-        
-        return strtoupper($letras . ' CON ' . sprintf('%02d', $decimales) . '/100 ' . $monedaName);
+        return $this->convertirNumeroALetras($numero, $moneda);
     }
 
     protected function numeroALetras($numero): string

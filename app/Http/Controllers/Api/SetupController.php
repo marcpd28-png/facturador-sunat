@@ -58,8 +58,8 @@ class SetupController extends Controller
             'certificado_pem' => 'nullable|file|mimes:pem,crt,cer,txt|max:2048',
             'certificado_password' => 'nullable|string|max:255',
             'logo_path' => 'nullable|file|mimes:jpeg,jpg,png,gif|max:1024',
-            'modo_produccion' => 'nullable|in:true,false,1,0',
-            'activo' => 'nullable|in:true,false,1,0',
+            'modo_produccion' => 'nullable|boolean',
+            'activo' => 'nullable|boolean',
         ]);
 
         /* return response()->json(['message' => $request->all()], 202); */
@@ -93,7 +93,7 @@ class SetupController extends Controller
                     'ruc' => $company->ruc,
                     'razon_social' => $company->razon_social,
                     'environment' => $request->environment,
-                    'has_certificate' => !empty($company->certificado_pem),
+                    'has_certificate' => $this->companyCertificateExists($company),
                     'branch_count' => $company->branches()->count()
                 ],
                 'branch' => [
@@ -188,7 +188,7 @@ class SetupController extends Controller
                 'company_environment' => $company ? ($company->modo_produccion ? 'produccion' : 'beta') : null,
                 'debug' => config('app.debug'),
                 'app_key_set' => !empty(config('app.key')),
-                'certificate_exists' => $company ? !empty($company->certificado_pem) : false,
+                'certificate_exists' => $this->companyCertificateExists($company),
                 'logo_exists' => $company ? !empty($company->logo_path) : false,
                 
                 // Estado de configuración paso a paso
@@ -263,7 +263,7 @@ class SetupController extends Controller
                     'id' => $company->id,
                     'ruc' => $company->ruc,
                     'environment' => $request->environment,
-                    'has_certificate' => !empty($company->certificado_pem)
+                    'has_certificate' => $this->companyCertificateExists($company)
                 ]
             ]);
 
@@ -442,19 +442,32 @@ class SetupController extends Controller
      */
     private function checkCertificatesDirectory(): array
     {
-        // Verificar directorios donde realmente se guardan los archivos
-        $certificadoExists = Storage::disk('public')->exists('certificado');
-        $logoExists = Storage::disk('public')->exists('logo');
-        
-        // Crear directorios si no existen
-        if (!$certificadoExists) Storage::disk('public')->makeDirectory('certificado');
-        if (!$logoExists) Storage::disk('public')->makeDirectory('logo');
+        if (!Storage::disk('public')->exists('certificado')) {
+            Storage::disk('public')->makeDirectory('certificado');
+        }
+
+        if (!Storage::disk('public')->exists('logo')) {
+            Storage::disk('public')->makeDirectory('logo');
+        }
         
         return [
-            'certificado_directory' => $certificadoExists,
-            'logo_directory' => $logoExists,
+            'certificado_directory' => Storage::disk('public')->exists('certificado'),
+            'logo_directory' => Storage::disk('public')->exists('logo'),
             'certificado_file_exists' => Storage::disk('public')->exists('certificado/certificado.pem'),
             'storage_link_exists' => is_link(public_path('storage'))
         ];
+    }
+
+    private function companyCertificateExists(?Company $company): bool
+    {
+        if (!$company) {
+            return false;
+        }
+
+        if ($company->certificado_pem && Storage::disk('public')->exists($company->certificado_pem)) {
+            return true;
+        }
+
+        return Storage::disk('public')->exists('certificado/certificado.pem');
     }
 }

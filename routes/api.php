@@ -83,9 +83,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Configuraciones de empresas
     Route::prefix('companies/{company_id}/config')->group(function () {
         Route::get('/', [CompanyConfigController::class, 'show']);
+        Route::get('/validate/services', [CompanyConfigController::class, 'validateServices']);
         Route::get('/{section}', [CompanyConfigController::class, 'getSection']);
         Route::put('/{section}', [CompanyConfigController::class, 'updateSection']);
-        Route::get('/validate/services', [CompanyConfigController::class, 'validateServices']);
         Route::post('/reset', [CompanyConfigController::class, 'resetToDefaults']);
         Route::post('/migrate', [CompanyConfigController::class, 'migrateCompany']);
         Route::delete('/cache', [CompanyConfigController::class, 'clearCache']);

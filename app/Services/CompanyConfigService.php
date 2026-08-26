@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Company;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class CompanyConfigService
@@ -198,6 +199,10 @@ class CompanyConfigService
             if (empty($company->clave_sol)) {
                 $validation['errors'][] = "Clave SOL no configurada";
             }
+
+            if (!$this->companyHasCertificate($company)) {
+                $validation['errors'][] = "Certificado digital PEM no configurado";
+            }
             
             $validation['valid'] = empty($validation['errors']);
             
@@ -211,6 +216,15 @@ class CompanyConfigService
                 'config' => []
             ];
         }
+    }
+
+    private function companyHasCertificate(Company $company): bool
+    {
+        if ($company->certificado_pem && Storage::disk('public')->exists($company->certificado_pem)) {
+            return true;
+        }
+
+        return Storage::disk('public')->exists('certificado/certificado.pem');
     }
 
     /**

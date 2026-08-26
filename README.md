@@ -90,6 +90,56 @@ openssl pkcs12 -in certificado.pfx -out certificado_correcto.pem -nodes
 
 **Nota:** Este comando te pedirá la contraseña de tu certificado .pfx y generará un archivo .pem que puedes usar directamente en el sistema.
 
+## Pruebas locales e integración SUNAT
+
+El panel de pruebas está disponible en `http://127.0.0.1:8000` cuando se levanta Laravel con `php artisan serve`.
+
+Flujo mínimo en localhost:
+
+1. Ejecutar migraciones y seeders.
+2. Inicializar usuario administrador.
+3. Guardar empresa en ambiente `beta`.
+4. Crear factura o boleta.
+5. Generar PDF.
+6. Validar servicios SUNAT.
+7. Enviar a SUNAT solo si el checklist indica certificado y configuración válidos.
+
+Para SUNAT BETA se usan las credenciales publicadas por SUNAT:
+
+- Endpoint facturación: `https://e-beta.sunat.gob.pe/ol-ti-itcpfegem-beta/billService`
+- Usuario SOL: `MODDATOS` (Greenter envía internamente `[RUC]MODDATOS`)
+- Clave SOL: `MODDATOS`
+
+SUNAT indica que el servicio BETA sirve para probar estructuras XML UBL 2.1 y no debe usarse para comprobantes reales, pruebas de estrés o envíos masivos. Para usar Greenter igual se necesita un archivo PEM válido con clave privada y certificado, porque el XML debe firmarse digitalmente. En BETA ese certificado no necesita estar registrado en SUNAT.
+
+Para generar un PEM local solo para BETA:
+
+```bash
+mkdir -p storage/app/public/certificado
+openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
+  -subj "/C=PE/ST=Lima/L=Lima/O=Facturador SUNAT Beta/CN=20161515648" \
+  -keyout storage/app/public/certificado/beta.key \
+  -out storage/app/public/certificado/beta.crt
+cat storage/app/public/certificado/beta.key storage/app/public/certificado/beta.crt \
+  > storage/app/public/certificado/certificado.pem
+chmod 600 storage/app/public/certificado/certificado.pem
+```
+
+Para producción no se deben usar credenciales ni certificado beta. Se requiere:
+
+- RUC activo, habido y habilitado como emisor electrónico.
+- Usuario SOL y clave SOL válidos para el RUC emisor.
+- Certificado digital válido del contribuyente o de un PSE autorizado.
+- Series y correlativos reales configurados por tipo de comprobante.
+- Endpoint de producción según el servicio que corresponda.
+- Validación de reglas SUNAT vigentes antes del go-live.
+
+Referencias oficiales:
+
+- Servicio BETA SUNAT: https://orientacion.sunat.gob.pe/12-pautas-servicio-beta
+- Certificado Digital SUNAT: https://cpe.sunat.gob.pe/certificado-digital
+- Guías, manuales y reglas de validación CPE: https://cpe.sunat.gob.pe/guias-y-manuales
+
 ## 🏗️ Arquitectura del Sistema
 
 ### Estructura de Modelos

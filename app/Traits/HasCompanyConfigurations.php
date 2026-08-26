@@ -41,7 +41,7 @@ trait HasCompanyConfigurations
     /**
      * Obtener configuración específica con cache
      */
-    public function getConfig(string $configType, string $environment = null, string $serviceType = null, $default = null)
+    public function getConfig(string $configType, ?string $environment = null, ?string $serviceType = null, $default = null)
     {
         $environment = $environment ?? ($this->modo_produccion ? 'produccion' : 'beta');
         $cacheKey = $this->getConfigCacheKey("{$configType}_{$environment}_{$serviceType}");
@@ -75,7 +75,7 @@ trait HasCompanyConfigurations
     /**
      * Establecer configuración específica
      */
-    public function setConfig(string $configType, array $configData, string $environment = null, string $serviceType = 'general', string $description = null): CompanyConfiguration
+    public function setConfig(string $configType, array $configData, ?string $environment = null, string $serviceType = 'general', ?string $description = null): CompanyConfiguration
     {
         $environment = $environment ?? ($this->modo_produccion ? 'produccion' : 'beta');
 
@@ -147,7 +147,7 @@ trait HasCompanyConfigurations
     /**
      * Obtener credenciales SUNAT para un servicio específico
      */
-    public function getSunatCredentials(string $serviceType = 'facturacion', string $environment = null): ?array
+    public function getSunatCredentials(string $serviceType = 'facturacion', ?string $environment = null): ?array
     {
         $environment = $environment ?? ($this->modo_produccion ? 'produccion' : 'beta');
         
@@ -157,7 +157,7 @@ trait HasCompanyConfigurations
     /**
      * Establecer credenciales SUNAT para un servicio específico
      */
-    public function setSunatCredentials(string $serviceType, array $credentials, string $environment = null): CompanyConfiguration
+    public function setSunatCredentials(string $serviceType, array $credentials, ?string $environment = null): CompanyConfiguration
     {
         $environment = $environment ?? ($this->modo_produccion ? 'produccion' : 'beta');
         
@@ -173,7 +173,7 @@ trait HasCompanyConfigurations
     /**
      * Verificar si tiene credenciales SUNAT configuradas
      */
-    public function hasSunatCredentials(string $serviceType = 'facturacion', string $environment = null): bool
+    public function hasSunatCredentials(string $serviceType = 'facturacion', ?string $environment = null): bool
     {
         $credentials = $this->getSunatCredentials($serviceType, $environment);
         
@@ -262,7 +262,7 @@ trait HasCompanyConfigurations
     /**
      * Configurar credenciales GRE para un ambiente específico
      */
-    public function setGreCredentials(array $credentials, string $environment = null): void
+    public function setGreCredentials(array $credentials, ?string $environment = null): void
     {
         $environment = $environment ?? ($this->modo_produccion ? 'produccion' : 'beta');
         
@@ -297,7 +297,7 @@ trait HasCompanyConfigurations
     /**
      * Limpiar credenciales GRE para un ambiente específico
      */
-    public function clearGreCredentials(string $environment = null): void
+    public function clearGreCredentials(?string $environment = null): void
     {
         $environment = $environment ?? ($this->modo_produccion ? 'produccion' : 'beta');
         
